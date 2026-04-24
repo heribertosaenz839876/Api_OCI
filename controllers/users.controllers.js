@@ -2,7 +2,7 @@ import User from '../models/users.model.js';
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find().sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
     res.status(500).json({ msg: 'Error al obtener usuarios', error: error.message });
@@ -27,6 +27,17 @@ export const getUser = async (req, res) => {
 export const postUser = async (req, res) => {
   try {
     const { name, username, password } = req.body;
+
+    if (!name || !username || !password) {
+      return res.status(400).json({ msg: 'Nombre, usuario y contraseña son obligatorios' });
+    }
+
+    const existingUser = await User.findOne({ username });
+
+    if (existingUser) {
+      return res.status(400).json({ msg: 'El nombre de usuario ya existe' });
+    }
+
     const user = new User({ name, username, password });
     await user.save();
     res.status(201).json(user);
@@ -43,7 +54,7 @@ export const putUser = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       id,
       { name, username, password },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!user) {
