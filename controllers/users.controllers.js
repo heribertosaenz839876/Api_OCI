@@ -1,8 +1,15 @@
 import User from '../models/users.model.js';
+import { hashPassword } from '../utils/hashPassword.js';
+
+const removePassword = (user) => {
+  const userObject = user.toObject ? user.toObject() : user;
+  delete userObject.password;
+  return userObject;
+};
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
     res.status(500).json({ msg: 'Error al obtener usuarios', error: error.message });
@@ -12,7 +19,7 @@ export const getUsers = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id);
+    const user = await User.findById(id).select('-password');
 
     if (!user) {
       return res.status(404).json({ msg: 'Usuario no encontrado' });
@@ -38,9 +45,11 @@ export const postUser = async (req, res) => {
       return res.status(400).json({ msg: 'El nombre de usuario ya existe' });
     }
 
-    const user = new User({ name, username, password });
+    const hashedPassword = hashPassword(password);
+    const user = new User({ name, username, password: hashedPassword });
     await user.save();
-    res.status(201).json(user);
+
+    res.status(201).json(removePassword(user));
   } catch (error) {
     res.status(500).json({ msg: 'Error al crear usuario', error: error.message });
   }
@@ -51,11 +60,17 @@ export const putUser = async (req, res) => {
     const { id } = req.params;
     const { name, username, password } = req.body;
 
+    const dataToUpdate = { name, username };
+
+    if (password) {
+      dataToUpdate.password = hashPassword(password);
+    }
+
     const user = await User.findByIdAndUpdate(
       id,
-      { name, username, password },
+      dataToUpdate,
       { new: true, runValidators: true }
-    );
+    ).select('-password');
 
     if (!user) {
       return res.status(404).json({ msg: 'Usuario no encontrado' });
@@ -76,7 +91,7 @@ export const delUser = async (req, res) => {
       return res.status(404).json({ msg: 'Usuario no encontrado' });
     }
 
-    res.json({ msg: 'Usuario eliminado', user });
+    res.json({ msg: 'Usuario eliminado', user: removePassword(user) });
   } catch (error) {
     res.status(500).json({ msg: 'Error al eliminar usuario', error: error.message });
   }

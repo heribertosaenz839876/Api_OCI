@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "hash:demo": "node scripts/hash-demo.js",
+    "hash:users": "node scripts/hash-existing-users.js"
   },
   "keywords": [],
   "author": "",
