@@ -1,5 +1,6 @@
 import User from '../models/users.model.js';
 import { comparePassword } from '../utils/hashPassword.js';
+import { createToken } from '../utils/jwt.js';
 
 const removePassword = (user) => {
   const userObject = user.toObject();
@@ -29,10 +30,14 @@ export const login = async (req, res) => {
       });
     }
 
+    const safeUser = removePassword(user);
+    const token = createToken(user);
+
     res.json({
       login: true,
       msg: 'ok',
-      user: removePassword(user)
+      user: safeUser,
+      token
     });
   } catch (error) {
     res.status(500).json({
